@@ -6,7 +6,7 @@ Aceito — 2026-09-07
 
 ## Contexto
 
-O projeto precisa rodar um cluster Kubernetes na AWS (`terraform/eks.tf` provisiona `aws_eks_cluster` e um `aws_eks_node_group` gerenciado). Essa é uma decisão distinta de "usar AWS" (ADR 0001 do `oficina-mecanica-infra-base`) ou de "usar Kubernetes" (implícito no requisito da Fase 2, ver ADR 0006 do `oficina-mecanica-app`): é especificamente a escolha de **como** o Kubernetes roda dentro da AWS — como um serviço gerenciado (EKS) ou como um cluster self-managed sobre instâncias EC2 cruas. Até hoje essa escolha nunca foi registrada explicitamente em nenhum documento do projeto.
+O projeto precisa rodar Kubernetes na AWS (`terraform/eks.tf` provisiona `aws_eks_cluster` e um `aws_eks_node_group` gerenciado). A decisão é distinta de escolher AWS ou adotar Kubernetes: define como operar o cluster, ccomo um serviço gerenciado (EKS) ou como um cluster self-managed sobre instâncias EC2. A [documentação Kubernetes da API](https://github.com/FIAP-15SOAT/oficina-mecanica-api/blob/main/docs/infra/kubernetes.md) explica os workloads consumidores.
 
 ## Decisão
 
@@ -26,7 +26,7 @@ Automatizariam parte do trabalho manual do `kubeadm`, tornando o self-managed ma
 
 ### Positivas
 
-- **Control plane totalmente operado pela AWS**: upgrades de versão, disponibilidade e backup do etcd ficam fora do escopo operacional do time.
+- **Operação do control plane delegada à AWS**: infraestrutura de disponibilidade e armazenamento do etcd são gerenciados pelo serviço; o time ainda escolhe a versão declarada e coordena upgrades e compatibilidade dos workloads.
 - **Managed Node Group simplifica o ciclo de vida dos nós**: substituição de nós, integração com Auto Scaling Groups gerenciados pela AWS e rollout de novas AMIs seguem um fluxo padronizado, sem scripts próprios de bootstrap de nó.
 - **Integração nativa com outros serviços AWS** (IAM para autenticação via `aws-iam-authenticator`/token, ECR, CloudWatch Logs) sem configuração adicional de plugins de terceiros.
 

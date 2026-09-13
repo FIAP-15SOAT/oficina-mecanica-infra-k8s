@@ -6,7 +6,7 @@ Aceito — 2026-09-07
 
 ## Contexto
 
-`terraform/k8s_namespace.tf` cria um único namespace Kubernetes (`oficina`, com labels `app.kubernetes.io/part-of` e `managed-by: terraform`) onde todos os recursos da aplicação (API, MailHog, HPA) e os workloads de plataforma provisionados por este repositório convivem. Não há separação por ambiente (ex.: `oficina-staging`/`oficina-prod`) nem por domínio de negócio dentro do cluster.
+`terraform/k8s_namespace.tf` cria o namespace `oficina`, com labels `app.kubernetes.io/part-of` e `managed-by: terraform`. API, MailHog, HPA e Datadog são aplicados pelo repositório da API nesse namespace. O Metrics Server provisionado aqui fica em **`kube-system`**, não em `oficina`. Não há separação da aplicação por ambiente ou domínio de negócio.
 
 ## Decisão
 
@@ -20,14 +20,14 @@ Isolaria ambientes diferentes dentro do mesmo cluster físico, permitindo testar
 
 ### Um namespace por domínio de negócio (ex.: `oficina-auth`, `oficina-work-orders`)
 
-Seguiria um padrão comum em arquiteturas de microsserviços, isolando recursos por área de responsabilidade. Descartada porque a aplicação é um **monólito modular** (ADR 0007 do `oficina-mecanica-app`) — um único processo/Deployment serve todos os domínios de negócio, então não existe uma fronteira de deploy real entre "auth" e "work-orders" para justificar namespaces separados; toda a API sobe e desce como uma unidade só.
+Seguiria um padrão de separação por área de responsabilidade. Descartada porque a API é um **monólito modular**, implantado como um Deployment para seus domínios internos; não há unidade de deploy separada entre módulos como auth e work-orders. A Lambda de autenticação externa é um componente próprio fora do Kubernetes.
 
 ## Consequências
 
 ### Positivas
 
 - **Configuração mínima**: um namespace só significa menos RBAC, menos `NetworkPolicy` (se algum dia adotadas) e menos superfície de configuração para manter sincronizada.
-- **Coerente com a arquitetura de monólito modular**: como a aplicação já é um único processo implantado como uma unidade (ADR 0007 do `oficina-mecanica-app`), um único namespace reflete fielmente essa unidade de deploy, sem uma separação artificial que a arquitetura da aplicação não sustenta.
+- **Coerente com a unidade de deploy da API**: o namespace agrupa seus workloads sem inventar deploys por módulo; componentes externos como Lambda e RDS mantêm seus próprios ciclos de vida.
 
 ### Negativas / Trade-offs
 
@@ -41,5 +41,5 @@ Seguiria um padrão comum em arquiteturas de microsserviços, isolando recursos 
 ## Referências
 
 - `terraform/k8s_namespace.tf` — definição do namespace `oficina`.
-- [`oficina-mecanica-app` › ADR 0007 — Padrão de comunicação: REST síncrono num monólito modular](https://github.com/FIAP-15SOAT/oficina-mecanica-app/blob/master/docs/adr/0007-padrao-de-comunicacao-rest-monolito.md)
+- [`oficina-mecanica-api` — Arquitetura](https://github.com/FIAP-15SOAT/oficina-mecanica-api/blob/main/docs/architecture.md)
 - [`oficina-mecanica-infra-base` › ADR 0001 — Escolha da nuvem e infra base](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-base/blob/main/docs/adr/0001-escolha-de-nuvem-e-infra-base.md)

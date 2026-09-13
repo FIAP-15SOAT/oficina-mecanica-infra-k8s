@@ -18,3 +18,6 @@ enable_metrics_server        = true
 metrics_server_chart_version = "3.13.0"
 
 api_node_port = 30080
+
+eks_cluster_role_name = "c221562a5587885l16308688t1w904709-LabEksClusterRole-zkyGp0ldYvnr"
+eks_node_role_name    = "c221562a5587885l16308688t1w904709477-LabEksNodeRole-V4iLcw9Basnh"

@@ -10,13 +10,13 @@ Os providers `kubernetes` e `helm` do Terraform (`terraform/providers.tf`) preci
 
 ## Decisão
 
-Autenticar os providers `kubernetes` e `helm` via **`data "aws_eks_cluster_auth"`**, que gera um **token IAM efêmero** de curta duração no momento da execução do Terraform, combinado com o endpoint e o certificado CA lidos diretamente dos atributos do `aws_eks_cluster` recém-criado (`aws_eks_cluster.eks_cluster.endpoint`, `.certificate_authority[0].data`). Não há kubeconfig estático gerado ou versionado em nenhum lugar — cada execução do Terraform obtém um token novo, válido só para aquela execução.
+Autenticar os providers `kubernetes` e `helm` via **`data "aws_eks_cluster_auth"`**, com token IAM de curta duração, endpoint e CA do recurso EKS (`.endpoint`, `.certificate_authority[0].data`). Os providers não leem kubeconfig local. O token tem prazo próprio e não se renova automaticamente só porque o apply ainda está rodando; operações longas ou credenciais expiradas podem exigir nova execução. Namespace e release Helm são recursos do mesmo state, com plan/destroy declarativos.
 
 ## Alternativas consideradas
 
 ### Kubeconfig estático gerado e armazenado como secret
 
-Geraria um arquivo de kubeconfig (via `aws eks update-kubeconfig`) e o armazenaria como um GitHub Secret, reutilizado em execuções futuras. Descartada porque um token de autenticação do EKS tem vida curta (minutos) — um kubeconfig estático ficaria inválido rapidamente e precisaria ser regenerado e re-armazenado manualmente a cada expiração, um processo operacional frágil e desnecessário quando o Terraform já pode gerar o token sob demanda a cada execução.
+Armazenar um token literal de curta duração em kubeconfig/Secret exigiria renovação frequente. Essa alternativa difere do kubeconfig gerado por `aws eks update-kubeconfig`, que normalmente usa um plugin exec para obter token sob demanda. A configuração adotada mantém endpoint/CA e autenticação nos providers, sem gerenciar um arquivo de kubeconfig para o pipeline.
 
 ### `kubectl`/Helm CLI chamados via `local-exec` fora dos providers nativos do Terraform
 

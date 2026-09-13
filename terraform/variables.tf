@@ -107,7 +107,7 @@ variable "metrics_server_chart_version" {
 }
 
 variable "api_node_port" {
-  description = "Porta NodePort em que a API e alcancada diretamente nos nos do cluster"
+  description = "NodePort on which the API is reached directly through the cluster nodes"
   type        = number
   default     = 30080
 }
