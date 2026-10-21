@@ -135,7 +135,7 @@ O balanceador fica **neste** repositório, e não no do Gateway, porque depende 
 O estado desta stack é armazenado no S3, com criptografia e lock nativo:
 
 - **Bucket**: `bkt-oficina-mecanica`
-- **Chave (Key)**: `infra/prod-simulated/k8s/terraform.tfstate`
+- **Chave (Key)**: `infra/prod-simulated/infra-k8s/terraform.tfstate`
 - **Região**: `us-east-1`
 - **Lock**: `use_lockfile = true`
 
