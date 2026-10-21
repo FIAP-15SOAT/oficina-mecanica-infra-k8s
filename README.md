@@ -19,7 +19,7 @@ Este repositório contém o código de **Infraestrutura como Código (IaC)** res
 
 Faz parte do ecossistema de serviços e infraestrutura da pós-graduação em Arquitetura de Software da FIAP (turma 15SOAT).
 
-A [API](https://github.com/FIAP-15SOAT/oficina-mecanica-api) é a entrada central da documentação da solução.
+A [API](https://github.com/FIAP-15SOAT/oficina-mecanica-work-order-service) é a entrada central da documentação da solução.
 
 ---
 
@@ -39,7 +39,7 @@ A [API](https://github.com/FIAP-15SOAT/oficina-mecanica-api) é a entrada centra
 
 3. **Namespace Compartilhado (`k8s_namespace.tf`)**:
    - Criação de `oficina`, após o node group, com labels de governança padronizados para os workloads da aplicação.
-   - Deployments/Services da API, HPA, MailHog e Datadog Agent são aplicados pelo repositório da [API](https://github.com/FIAP-15SOAT/oficina-mecanica-api), não por este Terraform. O banco é RDS em outra stack.
+   - Deployments/Services da API, HPA, MailHog e Datadog Agent são aplicados pelo repositório da [API](https://github.com/FIAP-15SOAT/oficina-mecanica-work-order-service), não por este Terraform. O banco é RDS em outra stack.
 
 4. **Metrics Server via Helm (`k8s_metrics_server.tf`)**:
    - Implantação opcional do Helm chart oficial de `metrics-server` em `kube-system`, habilitada por padrão. A versão do chart pode ser fixada por `metrics_server_chart_version`; o default vazio não a fixa.
