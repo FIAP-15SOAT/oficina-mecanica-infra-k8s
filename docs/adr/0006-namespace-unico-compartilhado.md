@@ -41,5 +41,5 @@ Seguiria um padrão de separação por área de responsabilidade. Descartada por
 ## Referências
 
 - `terraform/k8s_namespace.tf` — definição do namespace `oficina`.
-- [`oficina-mecanica-api` — Arquitetura](https://github.com/FIAP-15SOAT/oficina-mecanica-api/blob/main/docs/architecture.md)
+- [`oficina-mecanica-work-order-service` — Arquitetura](https://github.com/FIAP-15SOAT/oficina-mecanica-work-order-service/blob/main/docs/architecture.md)
 - [`oficina-mecanica-infra-base` › ADR 0001 — Escolha da nuvem e infra base](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-base/blob/main/docs/adr/0001-escolha-de-nuvem-e-infra-base.md)

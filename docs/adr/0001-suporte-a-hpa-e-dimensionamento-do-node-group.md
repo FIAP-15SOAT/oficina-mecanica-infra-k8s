@@ -6,7 +6,7 @@ Aceito — 2026-09-07
 
 ## Contexto
 
-A API (`oficina-mecanica-api`) aplica um [Horizontal Pod Autoscaler](https://github.com/FIAP-15SOAT/oficina-mecanica-api/blob/main/k8s/05-api-hpa.yaml) com `minReplicas: 1`, `maxReplicas: 5`, CPU alvo 70% e memória alvo 80%. Essas métricas dependem do **Metrics Server** provisionado por este repositório (`k8s_metrics_server.tf`) quando `enable_metrics_server=true`, o default atual. O HPA e o Deployment pertencem ao CD da API.
+A API (`oficina-mecanica-work-order-service`) aplica um [Horizontal Pod Autoscaler](https://github.com/FIAP-15SOAT/oficina-mecanica-work-order-service/blob/main/k8s/05-api-hpa.yaml) com `minReplicas: 1`, `maxReplicas: 5`, CPU alvo 70% e memória alvo 80%. Essas métricas dependem do **Metrics Server** provisionado por este repositório (`k8s_metrics_server.tf`) quando `enable_metrics_server=true`, o default atual. O HPA e o Deployment pertencem ao CD da API.
 
 Além de instalar o Metrics Server, o HPA impõe uma restrição sobre **como dimensionar o node group**: capacidade de CPU/memória e limite de pods/IPs precisam ser considerados juntos. No modelo de IP secundário do VPC CNI considerado nesta decisão, a fórmula `(nº de ENIs × (IPs por ENI − 1)) + 2` resulta nos valores abaixo; configurações como prefix delegation podem alterar esse limite:
 
@@ -44,7 +44,7 @@ Adicionaria uma camada de autoscaling de infraestrutura (nodes) complementar ao 
 ### Negativas / Trade-offs
 
 - **Custo por hora de `t3.medium` superior ao de `t3.small`**, consumindo mais crédito de laboratório — aceito porque a alternativa (`t3.small`) deixava o HPA sem capacidade real de escalar.
-- **Acoplamento entre dois repositórios**: uma mudança no `maxReplicas` do HPA (`oficina-mecanica-api`) pode invalidar silenciosamente o dimensionamento do node group aqui, já que os dois valores não são validados automaticamente um contra o outro — depende de revisão manual ao alterar qualquer um dos lados.
+- **Acoplamento entre dois repositórios**: uma mudança no `maxReplicas` do HPA (`oficina-mecanica-work-order-service`) pode invalidar silenciosamente o dimensionamento do node group aqui, já que os dois valores não são validados automaticamente um contra o outro — depende de revisão manual ao alterar qualquer um dos lados.
 - **Ainda sem margem para múltiplos DaemonSets adicionais**: o cálculo já considera o DaemonSet de observabilidade atual; adicionar outro DaemonSet exigiria refazer a conta e possivelmente rever o tipo de instância novamente.
 - **Sem scaling automático de nodes ou redundância de workloads**: desired/min/max são 1 e não há Cluster Autoscaler. O HPA escala pods dentro dessa capacidade, mesmo que o node group possa usar subnets de duas AZs.
 
@@ -55,7 +55,7 @@ Adicionaria uma camada de autoscaling de infraestrutura (nodes) complementar ao 
 
 ## Referências
 
-- [`oficina-mecanica-api` — Kubernetes e HPA](https://github.com/FIAP-15SOAT/oficina-mecanica-api/blob/main/docs/infra/kubernetes.md)
-- [`oficina-mecanica-api` › k8s/05-api-hpa.yaml](https://github.com/FIAP-15SOAT/oficina-mecanica-api/blob/main/k8s/05-api-hpa.yaml)
+- [`oficina-mecanica-work-order-service` — Kubernetes e HPA](https://github.com/FIAP-15SOAT/oficina-mecanica-work-order-service/blob/main/docs/infra/kubernetes.md)
+- [`oficina-mecanica-work-order-service` › k8s/05-api-hpa.yaml](https://github.com/FIAP-15SOAT/oficina-mecanica-work-order-service/blob/main/k8s/05-api-hpa.yaml)
 - [`oficina-mecanica-infra-base` › ADR 0001 — Escolha da nuvem e infra base (restrição de orçamento e node group fixo em 1)](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-base/blob/main/docs/adr/0001-escolha-de-nuvem-e-infra-base.md)
 - `terraform/variables.tf` (comentário de `node_instance_type` com o cálculo de capacidade do VPC CNI), `terraform/k8s_metrics_server.tf`.

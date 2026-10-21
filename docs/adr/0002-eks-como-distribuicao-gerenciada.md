@@ -6,7 +6,7 @@ Aceito — 2026-09-07
 
 ## Contexto
 
-O projeto precisa rodar Kubernetes na AWS (`terraform/eks.tf` provisiona `aws_eks_cluster` e um `aws_eks_node_group` gerenciado). A decisão é distinta de escolher AWS ou adotar Kubernetes: define como operar o cluster, ccomo um serviço gerenciado (EKS) ou como um cluster self-managed sobre instâncias EC2. A [documentação Kubernetes da API](https://github.com/FIAP-15SOAT/oficina-mecanica-api/blob/main/docs/infra/kubernetes.md) explica os workloads consumidores.
+O projeto precisa rodar Kubernetes na AWS (`terraform/eks.tf` provisiona `aws_eks_cluster` e um `aws_eks_node_group` gerenciado). A decisão é distinta de escolher AWS ou adotar Kubernetes: define como operar o cluster, ccomo um serviço gerenciado (EKS) ou como um cluster self-managed sobre instâncias EC2. A [documentação Kubernetes da API](https://github.com/FIAP-15SOAT/oficina-mecanica-work-order-service/blob/main/docs/infra/kubernetes.md) explica os workloads consumidores.
 
 ## Decisão
 

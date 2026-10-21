@@ -6,9 +6,9 @@ Aceito — 2026-09-07
 
 ## Contexto
 
-`terraform/ecr.tf` provisiona um repositório Amazon ECR dedicado às imagens de container da API (`oficina-mecanica-api`), com quatro configurações que juntas formam uma política de gestão de imagens: varredura automática de vulnerabilidades no push (`scan_on_push = true`), criptografia AES-256, mutabilidade de tag (`image_tag_mutability = "MUTABLE"`) e uma lifecycle policy mantendo as últimas 20 imagens.
+`terraform/ecr.tf` provisiona um repositório Amazon ECR dedicado às imagens de container da API (`oficina-mecanica-work-order-service`), com quatro configurações que juntas formam uma política de gestão de imagens: varredura automática de vulnerabilidades no push (`scan_on_push = true`), criptografia AES-256, mutabilidade de tag (`image_tag_mutability = "MUTABLE"`) e uma lifecycle policy mantendo as últimas 20 imagens.
 
-O pipeline de CD do `oficina-mecanica-api` (`cd.yml`, job `build-push-image`) publica **duas tags por build**: `${ECR_REPOSITORY}:${COMMIT_SHA}`, associada ao commit, e `${ECR_REPOSITORY}:latest`, atualizada a cada build. Uma nova execução do mesmo commit, inclusive via `workflow_dispatch`, pode republicar a tag `COMMIT_SHA`. O deploy (`Render deployment manifest with immutable image`, nome atual do passo em `cd.yml`) usa a tag por `COMMIT_SHA` no manifesto do `Deployment`; esse nome de passo não impõe imutabilidade no ECR. A tag `latest` serve como ponteiro flutuante de conveniência e não é usada pelos manifests Kubernetes atuais.
+O pipeline de CD do `oficina-mecanica-work-order-service` (`cd.yml`, job `build-push-image`) publica **duas tags por build**: `${ECR_REPOSITORY}:${COMMIT_SHA}`, associada ao commit, e `${ECR_REPOSITORY}:latest`, atualizada a cada build. Uma nova execução do mesmo commit, inclusive via `workflow_dispatch`, pode republicar a tag `COMMIT_SHA`. O deploy (`Render deployment manifest with immutable image`, nome atual do passo em `cd.yml`) usa a tag por `COMMIT_SHA` no manifesto do `Deployment`; esse nome de passo não impõe imutabilidade no ECR. A tag `latest` serve como ponteiro flutuante de conveniência e não é usada pelos manifests Kubernetes atuais.
 
 ## Decisão
 
@@ -31,7 +31,7 @@ Manteria histórico completo de todas as imagens já publicadas, sem risco de ex
 
 ### `scan_on_push = false`, com scanner de vulnerabilidade externo (ex.: Trivy no CI)
 
-Já existe uma etapa de SAST no [pipeline do `oficina-mecanica-api`](https://github.com/FIAP-15SOAT/oficina-mecanica-api/blob/main/docs/infra/ci-cd.md); um scanner externo dedicado a imagem poderia rodar ali. Descartada como substituto do `scan_on_push` nativo do ECR (embora nada impeça as duas coexistirem) porque o scan nativo roda automaticamente em toda imagem publicada, sem exigir manutenção de uma ferramenta adicional no pipeline nem a gestão de sua própria base de CVEs.
+Já existe uma etapa de SAST no [pipeline do `oficina-mecanica-work-order-service`](https://github.com/FIAP-15SOAT/oficina-mecanica-work-order-service/blob/main/docs/infra/ci-cd.md); um scanner externo dedicado a imagem poderia rodar ali. Descartada como substituto do `scan_on_push` nativo do ECR (embora nada impeça as duas coexistirem) porque o scan nativo roda automaticamente em toda imagem publicada, sem exigir manutenção de uma ferramenta adicional no pipeline nem a gestão de sua própria base de CVEs.
 
 ## Consequências
 
@@ -55,5 +55,5 @@ Já existe uma etapa de SAST no [pipeline do `oficina-mecanica-api`](https://git
 ## Referências
 
 - `terraform/ecr.tf` — configuração do repositório ECR.
-- [`oficina-mecanica-api` — CI/CD, build/push e imagem do Deployment](https://github.com/FIAP-15SOAT/oficina-mecanica-api/blob/main/docs/infra/ci-cd.md)
+- [`oficina-mecanica-work-order-service` — CI/CD, build/push e imagem do Deployment](https://github.com/FIAP-15SOAT/oficina-mecanica-work-order-service/blob/main/docs/infra/ci-cd.md)
 - [AWS provider — ECR, mutabilidade e filtros de exclusão](https://github.com/hashicorp/terraform-provider-aws/blob/main/website/docs/r/ecr_repository.html.markdown)
