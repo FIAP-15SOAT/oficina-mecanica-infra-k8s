@@ -47,7 +47,7 @@ A [API](https://github.com/FIAP-15SOAT/oficina-mecanica-work-order-service) é a
    - Fornece métricas de CPU/memória ao **HPA da API**, cujo manifesto escala de 1 a 5 pods. O HPA não aumenta o node group; não há Cluster Autoscaler nesta configuração.
 
 5. **Caminho Privado de Entrada da API (`nlb.tf`)**:
-   - **Network Load Balancer interno** (`nlb-oficina-mecanica-api`) nas subnets privadas, com **cross-zone habilitado** para encaminhar ao único node mesmo a partir da outra AZ.
+   - **Network Load Balancer interno** (`nlb-oficina-mecanica`) nas subnets privadas, com **cross-zone habilitado** para encaminhar ao único node mesmo a partir da outra AZ.
    - **Target Group** `instance` na **NodePort** da API (padrão `30080`), protocolo TCP e `preserve_client_ip = false`. A porta precisa coincidir com o `Service` da API, que encaminha ao pod na porta 3000.
    - Health check **HTTP em `/api/health/ready`**, na porta de tráfego, aceitando 200–399, a cada 10 segundos, com dois resultados consecutivos para sucesso/falha. É o mesmo endpoint da `readinessProbe` da API.
    - **Listener TCP:80** encaminhando ao target group.

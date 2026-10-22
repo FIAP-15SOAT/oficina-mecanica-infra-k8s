@@ -1,5 +1,5 @@
 resource "aws_lb" "nlb_api" {
-  name               = local.nlb_api_name
+  name               = local.nlb_name
   internal           = true
   load_balancer_type = "network"
   subnets            = data.terraform_remote_state.aws_base.outputs.private_subnet_ids
@@ -7,12 +7,12 @@ resource "aws_lb" "nlb_api" {
   enable_cross_zone_load_balancing = true
 
   tags = {
-    Name = local.nlb_api_name
+    Name = local.nlb_name
   }
 }
 
 resource "aws_lb_target_group" "tg_api" {
-  name        = local.tg_api_name
+  name        = local.tg_work_order_name
   port        = var.api_node_port
   protocol    = "TCP"
   target_type = "instance"
@@ -31,7 +31,7 @@ resource "aws_lb_target_group" "tg_api" {
   }
 
   tags = {
-    Name = local.tg_api_name
+    Name = local.tg_work_order_name
   }
 }
 
@@ -60,6 +60,6 @@ resource "aws_vpc_security_group_ingress_rule" "eks_nodes_api_node_port" {
   to_port           = var.api_node_port
 
   tags = {
-    Name = "sgr-${var.project_name}-api-node-port"
+    Name = "sgr-${var.project_name}-work-order-node-port"
   }
 }
