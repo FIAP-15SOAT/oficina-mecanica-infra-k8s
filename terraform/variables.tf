@@ -73,7 +73,6 @@ variable "node_max_size" {
 variable "aws_base_state_bucket" {
   description = "S3 bucket name that stores aws-base Terraform state"
   type        = string
-  default     = "bkt-oficina-mecanica"
 }
 
 variable "aws_base_state_key" {

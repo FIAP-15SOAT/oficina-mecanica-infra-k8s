@@ -94,7 +94,7 @@ completo no YAML, com a versão correspondente registrada em comentário.
    `steps.aws_creds.outcome` conserva o resultado real para decidir os próximos.
 7. **Terraform Plan Kubernetes**: executa somente se
    `steps.aws_creds.outcome == 'success'`. Primeiro faz
-   `terraform init -reconfigure -no-color` para habilitar o backend remoto;
+   `terraform init -reconfigure -no-color -backend-config="bucket=$TF_STATE_BUCKET"` para habilitar o backend remoto;
    depois `terraform plan -no-color` consulta a AWS e os states necessários e
    mostra as mudanças propostas. Esse step injeta `TF_VAR_eks_cluster_role_name` e `TF_VAR_eks_node_role_name` a partir de `vars.EKS_CLUSTER_ROLE_NAME` e `vars.EKS_NODE_ROLE_NAME`. As roles devem existir e a infra-base precisa ter state acessível. Uma falha de init/plan nessa
    condição **falha o job**; a tolerância não cobre erros depois de autenticar.
@@ -144,7 +144,7 @@ manual é avaliado no job inteiro antes desses steps.
 3. **Configure AWS Credentials**: configura os três Secrets temporários e
    `us-east-1`. Aqui **não** há `continue-on-error`; credenciais ausentes ou
    inválidas impedem a inicialização e o apply.
-4. **Terraform Init**: executa `terraform init -no-color` em `terraform/`.
+4. **Terraform Init**: executa `terraform init -no-color -backend-config="bucket=$TF_STATE_BUCKET"` em `terraform/`.
    Instala providers e inicializa o backend S3 configurado para esta stack;
    o bucket precisa existir e ser acessível.
 5. **Terraform Validate**: executa `terraform validate -no-color` antes do
@@ -176,6 +176,7 @@ equipe. Ambos os workflows fixam `AWS_REGION=us-east-1`.
 | Variable | `BOT_APP_ID` | CI, `Generate GitHub App Token` | ID do App instalado no repositório |
 | Secret | `BOT_PRIVATE_KEY` | CI, `Generate GitHub App Token` | Chave privada do App |
 | Variable | `ENABLE_DEPLOY` | Condition do job de CD | `true` habilita deploy automático; manual ainda exige `main` |
+| Variable (organização) | `TF_STATE_BUCKET` | CI e CD (`env` do workflow) | Nome do bucket de state, em variável para trocá-lo sem editar arquivo versionado: vai ao `terraform init` por `-backend-config` e a `TF_VAR_aws_base_state_bucket`; sem ela, o `init` falha |
 | Variable | `EKS_CLUSTER_ROLE_NAME` | Plan do CI; plan/apply do CD | Nome da role IAM existente para o cluster |
 | Variable | `EKS_NODE_ROLE_NAME` | Plan do CI; plan/apply do CD | Nome da role IAM existente para os nodes |
 

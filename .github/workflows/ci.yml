@@ -15,6 +15,8 @@ permissions:
 
 env:
   AWS_REGION: us-east-1
+  TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
+  TF_VAR_aws_base_state_bucket: ${{ vars.TF_STATE_BUCKET }}
 
 jobs:
   tf-validate:
@@ -49,7 +51,7 @@ jobs:
           TF_VAR_eks_cluster_role_name: ${{ vars.EKS_CLUSTER_ROLE_NAME }}
           TF_VAR_eks_node_role_name: ${{ vars.EKS_NODE_ROLE_NAME }}
         run: |
-          terraform init -reconfigure -no-color
+          terraform init -reconfigure -no-color -backend-config="bucket=$TF_STATE_BUCKET"
           terraform plan -no-color
       - name: Note skipped plan in job summary
         if: steps.aws_creds.outcome == 'failure'
