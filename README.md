@@ -121,7 +121,7 @@ O balanceador fica **neste** repositório, e não no do Gateway, porque depende 
 │   ├── nlb.tf  # NLB interno, TG, listener, attachment e ingress
 │   ├── outputs.tf  # Outputs de integração
 │   ├── providers.tf  # Providers e leitura de remote state quando aplicável
-│   ├── terraform.tfvars  # Configuração versionada do laboratório
+│   ├── terraform.tfvars  # Configuração estável da stack
 │   ├── terraform.tfvars.example  # Referência para configurar o ambiente
 │   └── variables.tf  # Variáveis de entrada
 ├── .gitignore  # Arquivos locais ignorados
@@ -134,14 +134,15 @@ O balanceador fica **neste** repositório, e não no do Gateway, porque depende 
 
 O estado desta stack é armazenado no S3, com criptografia e lock nativo:
 
-- **Bucket**: `bkt-oficina-mecanica`
+- **Bucket**: o valor da variável de Actions da organização `TF_STATE_BUCKET`, passado no `terraform init` por `-backend-config`
 - **Chave (Key)**: `infra/prod-simulated/infra-k8s/terraform.tfstate`
 - **Região**: `us-east-1`
 - **Lock**: `use_lockfile = true`
 
 O bucket precisa existir e permitir leitura/gravação de state e lockfile. A
-stack também lê o state da infra-base, descrito na integração acima. Bucket,
-keys e nome do ECR permanecem estáveis, mesmo com a identidade GitHub
+stack também lê o state da infra-base, descrito na integração acima, no bucket
+de `aws_base_state_bucket`, que os workflows preenchem com `TF_STATE_BUCKET`.
+Keys e nome do ECR permanecem estáveis, mesmo com a identidade GitHub
 `oficina-mecanica-infra-k8s`.
 
 ---
@@ -162,7 +163,7 @@ keys e nome do ECR permanecem estáveis, mesmo com a identidade GitHub
 | `node_desired_size` | `number` | `1` | Quantidade desejada de nós | Quantidade desejada de nodes |
 | `node_min_size` | `number` | `1` | Quantidade mínima de nós | Quantidade mínima de nodes |
 | `node_max_size` | `number` | `1` | Quantidade máxima de nós | Quantidade máxima de nodes |
-| `aws_base_state_bucket` | `string` | `bkt-oficina-mecanica` | Bucket S3 do state de rede (infra-base) | Bucket do state de rede |
+| `aws_base_state_bucket` | `string` | — | Bucket S3 do state de rede (infra-base) | TF_VAR_aws_base_state_bucket, preenchida pelos workflows com a Variable da organização TF_STATE_BUCKET |
 | `aws_base_state_key` | `string` | `infra/prod-simulated/infra-base/terraform.tfstate` | Chave do state de rede (infra-base) | Key estável do state de rede |
 | `aws_base_state_region` | `string` | `us-east-1` | Região do state de rede | Região do state de rede |
 | `k8s_namespace` | `string` | `oficina` | Namespace Kubernetes a ser criado | Namespace da aplicação |
@@ -170,7 +171,7 @@ keys e nome do ECR permanecem estáveis, mesmo com a identidade GitHub
 | `metrics_server_chart_version` | `string` | `""` | Vazio não fixa versão do chart; não é a versão do provider Helm | Vazio não fixa versão do chart; não é a versão do provider Helm |
 | `api_node_port` | `number` | `30080` | NodePort em que a API é alcançada nos nós; precisa casar com o `Service` da API | Deve coincidir com nodePort no Service da API |
 
-As roles devem corresponder à conta atual do AWS Academy. Configure `EKS_CLUSTER_ROLE_NAME` e `EKS_NODE_ROLE_NAME` como Variables do GitHub para os workflows; no terminal, use os inputs Terraform correspondentes. As credenciais temporárias expiram, mas não se presume que os nomes das roles mudem a cada reinício de sessão.
+O `terraform.tfvars` versionado guarda só a configuração estável da stack (tamanhos, limites, namespace, chave e região do state de rede). Os valores que dependem da conta AWS ficam em variáveis, para mudar sem editar arquivo versionado, e fora do `terraform.tfvars`, porque ele tem precedência sobre `TF_VAR_*`: o bucket vem da Variable da organização `TF_STATE_BUCKET`, e as roles vêm das Variables `EKS_CLUSTER_ROLE_NAME` e `EKS_NODE_ROLE_NAME` deste repositório, com as roles da conta AWS atual. No terminal, exporte os `TF_VAR_*` correspondentes.
 
 ---
 
@@ -198,8 +199,8 @@ As roles devem corresponder à conta atual do AWS Academy. Configure `EKS_CLUSTE
 1. Infraestrutura de rede previamente provisionada via [infra-base](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-base), com state acessível.
 2. **Terraform ≥ 1.11.0**, com providers AWS ≥ 6.46.0/<7, Kubernetes ≥ 2.32.0/<3 e Helm ≥ 3/<4. As versões instaladas ficam em `terraform/.terraform.lock.hcl`.
 3. **AWS CLI v2** configurada com as três credenciais temporárias do AWS Academy; permissões AWS e acesso Kubernetes adequados à conta atual.
-4. Nomes de duas roles IAM existentes definidos em `eks_cluster_role_name` e `eks_node_role_name`. Variables do GitHub não são lidas automaticamente no terminal local.
-5. `terraform.tfvars` existente revisado; não o substitua pela referência sem conferir os valores. Verifique novamente roles e permissões quando mudar a conta do laboratório.
+4. Nome do bucket de state e das duas roles IAM existentes da conta, exportados no shell (passo 3). Variables do GitHub não são lidas automaticamente no terminal local.
+5. `terraform.tfvars` versionado com a configuração estável da stack; os valores que dependem da conta vêm das variáveis.
 6. **kubectl** para diagnóstico após o apply. O Helm CLI não é pré-requisito deste Terraform, que usa o provider Helm.
 
 ### Passo a Passo
@@ -211,8 +212,12 @@ git clone https://github.com/FIAP-15SOAT/oficina-mecanica-infra-k8s.git
 # 2. Entrar no diretório da configuração Terraform
 cd oficina-mecanica-infra-k8s/terraform
 
-# 3. Inicializar os providers e o backend S3
-terraform init
+# 3. Informar o bucket de state e as roles e inicializar os providers e o backend S3
+export TF_STATE_BUCKET=<nome do bucket>
+export TF_VAR_aws_base_state_bucket="$TF_STATE_BUCKET"
+export TF_VAR_eks_cluster_role_name=<role do cluster>
+export TF_VAR_eks_node_role_name=<role dos nodes>
+terraform init -backend-config="bucket=$TF_STATE_BUCKET"
 
 # 4. Verificar a formatação sem modificar arquivos
 terraform fmt -check -recursive
@@ -258,7 +263,7 @@ terraform validate
 
 `init` requer acesso ao registry ou cache. Acrescente `-lockfile=readonly` se já
 houver lockfile e quiser preservar suas versões/checksums. Depois dessa
-inicialização estática, use `terraform init -reconfigure` antes do plan remoto.
+inicialização estática, use `terraform init -reconfigure -backend-config="bucket=$TF_STATE_BUCKET"` antes do plan remoto.
 A validação não consulta os states nem comprova permissões, capacidade do
 cluster ou resultado de um plan.
 
