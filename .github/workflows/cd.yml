@@ -12,6 +12,7 @@ concurrency:
 
 env:
   AWS_REGION: us-east-1
+  EKS_CLUSTER_NAME: eks-oficina-mecanica
   TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
   TF_VAR_aws_base_state_bucket: ${{ vars.TF_STATE_BUCKET }}
   TF_IN_AUTOMATION: "true"
@@ -52,13 +53,66 @@ jobs:
       - name: Terraform Plan
         env:
           TF_VAR_eks_cluster_role_name: ${{ vars.EKS_CLUSTER_ROLE_NAME }}
-          TF_VAR_eks_node_role_name: ${{ vars.EKS_NODE_ROLE_NAME }}
         run: terraform plan -no-color
         working-directory: terraform
 
       - name: Terraform Apply
         env:
           TF_VAR_eks_cluster_role_name: ${{ vars.EKS_CLUSTER_ROLE_NAME }}
-          TF_VAR_eks_node_role_name: ${{ vars.EKS_NODE_ROLE_NAME }}
         run: terraform apply -auto-approve -no-color
         working-directory: terraform
+
+  platform-apply:
+    name: Apply Platform Manifests
+    runs-on: ubuntu-latest
+    needs:
+      - terraform-k8s-base
+    environment: production
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      (vars.ENABLE_DEPLOY == 'true' || github.event_name == 'workflow_dispatch')
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Validate Datadog API key
+        env:
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${DD_API_KEY:-}" ]]; then
+            echo "::error::DD_API_KEY secret is not configured. Configure DD_API_KEY before applying platform manifests."
+            exit 1
+          fi
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@254c19bd240aabef8777f48595e9d2d7b972184b # v6.2.1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Configure kubectl
+        run: aws eks update-kubeconfig --region "$AWS_REGION" --name "$EKS_CLUSTER_NAME"
+
+      - name: Apply Datadog Secret via stdin
+        env:
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+        run: |
+          set -euo pipefail
+          kubectl create secret generic datadog-secret \
+            --namespace platform \
+            --from-literal=DD_API_KEY="${DD_API_KEY}" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Apply Platform Manifests
+        run: kubectl apply -f k8s/platform/
+
+      - name: Wait for Platform Rollout
+        run: |
+          set -euo pipefail
+          kubectl rollout status daemonset/datadog-agent -n platform --timeout=180s
+          kubectl rollout status deployment/mailhog -n platform --timeout=180s

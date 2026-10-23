@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mailhog
+  namespace: platform
+  labels:
+    app.kubernetes.io/name: mailhog
+    app.kubernetes.io/part-of: oficina-mecanica
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mailhog
+
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: mailhog
+        app.kubernetes.io/part-of: oficina-mecanica
+
+    spec:
+      containers:
+        - name: mailhog
+          image: mailhog/mailhog:v1.0.1
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - name: smtp
+              containerPort: 1025
+
+            - name: http
+              containerPort: 8025
+
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+
+            limits:
+              cpu: "200m"
+              memory: "256Mi"
+
+          readinessProbe:
+            tcpSocket:
+              port: 1025
+            initialDelaySeconds: 5
+            periodSeconds: 10
+
+          livenessProbe:
+            tcpSocket:
+              port: 1025
+            initialDelaySeconds: 10
+            periodSeconds: 20
