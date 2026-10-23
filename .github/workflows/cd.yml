@@ -5,6 +5,15 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      action:
+        description: "Terraform action to execute"
+        required: false
+        default: "apply"
+        type: choice
+        options:
+          - apply
+          - destroy
 
 concurrency:
   group: production
@@ -51,15 +60,24 @@ jobs:
         working-directory: terraform
 
       - name: Terraform Plan
+        if: github.event_name != 'workflow_dispatch' || inputs.action != 'destroy'
         env:
           TF_VAR_eks_cluster_role_name: ${{ vars.EKS_CLUSTER_ROLE_NAME }}
         run: terraform plan -no-color
         working-directory: terraform
 
       - name: Terraform Apply
+        if: github.event_name != 'workflow_dispatch' || inputs.action != 'destroy'
         env:
           TF_VAR_eks_cluster_role_name: ${{ vars.EKS_CLUSTER_ROLE_NAME }}
         run: terraform apply -auto-approve -no-color
+        working-directory: terraform
+
+      - name: Terraform Destroy
+        if: github.event_name == 'workflow_dispatch' && inputs.action == 'destroy'
+        env:
+          TF_VAR_eks_cluster_role_name: ${{ vars.EKS_CLUSTER_ROLE_NAME }}
+        run: terraform destroy -auto-approve -no-color
         working-directory: terraform
 
   platform-apply:
@@ -70,7 +88,8 @@ jobs:
     environment: production
     if: >-
       github.ref == 'refs/heads/main' &&
-      (vars.ENABLE_DEPLOY == 'true' || github.event_name == 'workflow_dispatch')
+      (vars.ENABLE_DEPLOY == 'true' || github.event_name == 'workflow_dispatch') &&
+      (github.event_name != 'workflow_dispatch' || inputs.action != 'destroy')
     permissions:
       contents: read
 
