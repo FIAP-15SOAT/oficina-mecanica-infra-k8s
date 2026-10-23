@@ -2,7 +2,7 @@
 
 ## Status
 
-Aceito — 2026-09-07
+Substituído por [ADR 0007](0007-isolamento-por-namespace-e-ecr-por-bounded-context.md) — 2026-10-23 (originalmente aceito em 2026-09-07)
 
 ## Contexto
 

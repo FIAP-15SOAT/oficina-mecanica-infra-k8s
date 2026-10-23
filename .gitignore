@@ -10,3 +10,6 @@ crash.*.log
 .DS_Store
 .vscode/
 .idea/
+
+# Local plans
+superpowers/

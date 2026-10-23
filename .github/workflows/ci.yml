@@ -49,7 +49,6 @@ jobs:
         working-directory: terraform
         env:
           TF_VAR_eks_cluster_role_name: ${{ vars.EKS_CLUSTER_ROLE_NAME }}
-          TF_VAR_eks_node_role_name: ${{ vars.EKS_NODE_ROLE_NAME }}
         run: |
           terraform init -reconfigure -no-color -backend-config="bucket=$TF_STATE_BUCKET"
           terraform plan -no-color

@@ -2,7 +2,7 @@
 
 ## Status
 
-Aceito — 2026-09-07
+Substituído por [ADR 0008](0008-escalonamento-do-node-group-para-2-nos-t3-medium.md) — 2026-10-23 (originalmente aceito em 2026-09-07)
 
 ## Contexto
 

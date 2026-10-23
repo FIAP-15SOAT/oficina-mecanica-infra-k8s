@@ -18,29 +18,29 @@ output "cluster_version" {
   value       = aws_eks_cluster.eks_cluster.version
 }
 
-output "ecr_repository_url" {
-  description = "URL of the ECR application repository"
-  value       = aws_ecr_repository.ecr_app_repo.repository_url
+output "service_listener_arns" {
+  description = "Map of internal NLB listener ARNs indexed by bounded context"
+  value       = { for k, v in aws_lb_listener.service : k => v.arn }
 }
 
-output "k8s_namespace" {
-  description = "Kubernetes namespace for the project"
-  value       = kubernetes_namespace_v1.k8s_namespace.metadata[0].name
+output "service_listener_ports" {
+  description = "Map of internal NLB listener TCP ports indexed by bounded context"
+  value       = { for k, v in local.services : k => v.listener_port }
+}
+
+output "nlb_dns_name" {
+  description = "Internal DNS name of the NLB"
+  value       = aws_lb.nlb_api.dns_name
+}
+
+output "smtp_listener_port" {
+  description = "Internal NLB listener TCP port for MailHog SMTP"
+  value       = local.smtp_listener_port
 }
 
 output "api_nlb_listener_arn" {
-  description = "ARN do listener do NLB interno da API."
-  value       = aws_lb_listener.nlb_api_listener.arn
-}
-
-output "api_nlb_arn" {
-  description = "ARN do NLB interno da API."
-  value       = aws_lb.nlb_api.arn
-}
-
-output "api_nlb_dns_name" {
-  description = "Nome DNS interno do NLB da API, util para diagnostico de dentro da VPC."
-  value       = aws_lb.nlb_api.dns_name
+  description = "Transitional alias for service_listener_arns[\"work-order\"] until C-08 migrates the API Gateway"
+  value       = aws_lb_listener.service["work-order"].arn
 }
 
 output "zz_next_steps" {

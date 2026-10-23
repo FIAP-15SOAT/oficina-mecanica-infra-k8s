@@ -1,6 +1,9 @@
-resource "aws_ecr_repository" "ecr_app_repo" {
-  name                 = local.ecr_app_repo_name
+resource "aws_ecr_repository" "service" {
+  for_each = local.services
+
+  name                 = "ecr-${var.project_name}-${each.key}"
   image_tag_mutability = "MUTABLE"
+  force_delete         = true
 
   image_scanning_configuration {
     scan_on_push = true
@@ -11,12 +14,14 @@ resource "aws_ecr_repository" "ecr_app_repo" {
   }
 
   tags = {
-    Name = local.ecr_app_repo_name
+    Name = "ecr-${var.project_name}-${each.key}"
   }
 }
 
-resource "aws_ecr_lifecycle_policy" "ecr_app_repo_lifecycle" {
-  repository = aws_ecr_repository.ecr_app_repo.name
+resource "aws_ecr_lifecycle_policy" "service_lifecycle" {
+  for_each = local.services
+
+  repository = aws_ecr_repository.service[each.key].name
 
   policy = jsonencode({
     rules = [
