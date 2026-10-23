@@ -16,7 +16,7 @@ abrir PR (**CI**), ou aplicar a infraestrutura e os manifests de plataforma (**C
 | Workflow | Arquivo | Gatilho | Responsabilidade |
 | --- | --- | --- | --- |
 | CI | `ci.yml` | `push` em `feature/**` e `fix/**` | fmt/init estático/validate; plan quando autenticação AWS estiver disponível; abertura idempotente de PR para `main` |
-| CD | `cd.yml` | `push` em `main` ou `workflow_dispatch` | init/validate/plan/apply da infraestrutura Terraform e aplicação dos manifests do namespace `platform` (Datadog Agent e MailHog) |
+| CD | `cd.yml` | `push` em `main` ou `workflow_dispatch` (`action`: `apply` \| `destroy`) | init/validate e `plan`/`apply` (padrão) ou `destroy` da infraestrutura Terraform; aplicação dos manifests do namespace `platform` (Datadog Agent e MailHog) apenas no `apply` |
 
 **Como ler os diagramas:** cada caixa grande é um **job**; seus **steps** estão
 enumerados dentro dela, na ordem do YAML. A seta entre jobs indica `needs`.
@@ -92,12 +92,13 @@ github.ref == 'refs/heads/main' &&
 3. **Configure AWS Credentials**: configura os três Secrets temporários e `us-east-1`.
 4. **Terraform Init**: executa `terraform init -no-color -backend-config="bucket=$TF_STATE_BUCKET"` em `terraform/`.
 5. **Terraform Validate**: executa `terraform validate -no-color`.
-6. **Terraform Plan**: executa `terraform plan -no-color` com `TF_VAR_eks_cluster_role_name: ${{ vars.EKS_CLUSTER_ROLE_NAME }}`.
-7. **Terraform Apply**: executa `terraform apply -auto-approve -no-color` com `TF_VAR_eks_cluster_role_name: ${{ vars.EKS_CLUSTER_ROLE_NAME }}`.
+6. **Terraform Plan** (`if: github.event_name != 'workflow_dispatch' || inputs.action != 'destroy'`): executa `terraform plan -no-color` com `TF_VAR_eks_cluster_role_name: ${{ vars.EKS_CLUSTER_ROLE_NAME }}`.
+7. **Terraform Apply** (`if: github.event_name != 'workflow_dispatch' || inputs.action != 'destroy'`): executa `terraform apply -auto-approve -no-color` com `TF_VAR_eks_cluster_role_name: ${{ vars.EKS_CLUSTER_ROLE_NAME }}`.
+8. **Terraform Destroy** (`if: github.event_name == 'workflow_dispatch' && inputs.action == 'destroy'`): executa `terraform destroy -auto-approve -no-color` com `TF_VAR_eks_cluster_role_name: ${{ vars.EKS_CLUSTER_ROLE_NAME }}`, removendo o cluster EKS, Node Group, Launch Template, ECRs, namespaces e NLB interno quando acionado com `action=destroy`.
 
 ### Job `platform-apply` — Apply Platform Manifests
 
-Executa após `terraform-k8s-base` (`needs: [terraform-k8s-base]`), garantindo que o cluster EKS e o namespace `platform` já existam:
+Executa após `terraform-k8s-base` (`needs: [terraform-k8s-base]`) somente quando a ação não é `destroy` (`github.event_name != 'workflow_dispatch' || inputs.action != 'destroy'`), garantindo que o cluster EKS e o namespace `platform` já existam:
 
 1. **Checkout**: obtém os manifests versionados em `k8s/platform/`.
 2. **Validate Datadog API key**: verifica se o secret `DD_API_KEY` está preenchido; se estiver vazio ou ausente, falha explicitamente com `::error::` antes de tocar no cluster.
