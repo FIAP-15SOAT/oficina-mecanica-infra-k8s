@@ -38,11 +38,6 @@ output "smtp_listener_port" {
   value       = local.smtp_listener_port
 }
 
-output "api_nlb_listener_arn" {
-  description = "Transitional alias for service_listener_arns[\"work-order\"] until C-08 migrates the API Gateway"
-  value       = aws_lb_listener.service["work-order"].arn
-}
-
 output "zz_next_steps" {
   description = "Post-deploy quick guide shown at the end of terraform output"
   value       = <<-EOT

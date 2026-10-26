@@ -84,14 +84,14 @@ data "terraform_remote_state" "aws_base" {
 
 ## 🔗 Integração com `oficina-mecanica-api-gateway` e Lambdas
 
-Este repositório é dono do **caminho privado de entrada** dos microsserviços e do SMTP, publicando os mapas `service_listener_arns` e `service_listener_ports` com o ARN e a porta TCP do listener de cada bounded context no NLB interno (`work-order` na porta `80`, `identity` na `8081`, `billing` na `8082` e `inventory` na `8083`), além de manter o alias de transição `api_nlb_listener_arn` (apontando para `service_listener_arns["work-order"]`) até que a alteração C-08 migre o [`oficina-mecanica-api-gateway`](https://github.com/FIAP-15SOAT/oficina-mecanica-api-gateway) para ler os mapas:
+Este repositório é dono do **caminho privado de entrada** dos microsserviços e do SMTP, publicando os mapas `service_listener_arns` e `service_listener_ports` com o ARN e a porta TCP do listener de cada bounded context no NLB interno (`work-order` na porta `80`, `identity` na `8081`, `billing` na `8082` e `inventory` na `8083`). O [`oficina-mecanica-api-gateway`](https://github.com/FIAP-15SOAT/oficina-mecanica-api-gateway) lê esses mapas para ligar cada grupo de rotas ao listener do serviço dono:
 
 ```text
 cliente → API Gateway (HTTP API) → VPC Link V2 → NLB interno (listeners 80/8081/8082/8083) → NodePorts (30080..30083) → Pods dos serviços
 Lambda / VPC → NLB interno (listener 1025, nlb_dns_name:smtp_listener_port) → NodePort (31025) → Pod do MailHog (namespace platform)
 ```
 
-O balanceador fica **neste** repositório, e não no do Gateway, porque depende de dois recursos deste stack: o **Auto Scaling Group** do managed node group (alvo dos `aws_autoscaling_attachment`) e o **security group gerenciado do cluster** (onde as regras de ingress dos NodePorts são criadas). Assim, uma substituição do node group refaz o vínculo no mesmo `apply`, em vez de deixar o Gateway apontando para um ASG inexistente. O raciocínio completo, com as alternativas descartadas, está no [ADR 0009](docs/adr/0009-nlb-interno-unico-com-listeners-por-porta.md) e no [ADR 0003 do Gateway](https://github.com/FIAP-15SOAT/oficina-mecanica-api-gateway/blob/main/docs/adr/0003-integracao-privada-com-o-eks.md).
+O balanceador fica **neste** repositório, e não no do Gateway, porque depende de dois recursos deste stack: o **Auto Scaling Group** do managed node group (alvo dos `aws_autoscaling_attachment`) e o **security group gerenciado do cluster** (onde as regras de ingress dos NodePorts são criadas). Assim, uma substituição do node group refaz o vínculo no mesmo `apply`, em vez de deixar o Gateway apontando para um ASG inexistente. O raciocínio completo, com as alternativas descartadas, está no [ADR 0009](docs/adr/0009-nlb-interno-unico-com-listeners-por-porta.md) e nos ADRs [0003](https://github.com/FIAP-15SOAT/oficina-mecanica-api-gateway/blob/main/docs/adr/0003-integracao-privada-com-o-eks.md) e [0005](https://github.com/FIAP-15SOAT/oficina-mecanica-api-gateway/blob/main/docs/adr/0005-integracao-privada-por-servico-e-tabela-de-donos.md) do Gateway.
 
 > ⚠️ **O NLB é criado sem security group.** Um NLB criado sem SG **não pode receber um depois** — só substituindo o balanceador. A decisão é deliberada: as regras permitem os NodePorts (`30080`–`30083` e `31025`) para toda a CIDR da VPC, incluindo nodes, ENIs da Lambda/VPC Link e outros recursos internos. O raciocínio completo está no [ADR 0003 do Gateway](https://github.com/FIAP-15SOAT/oficina-mecanica-api-gateway/blob/main/docs/adr/0003-integracao-privada-com-o-eks.md).
 
@@ -193,10 +193,9 @@ O `terraform.tfvars` versionado guarda a configuração estável da stack. Os va
 | `cluster_certificate_authority_data` | Certificado CA do EKS codificado em base64 | CA do EKS codificada em base64 |
 | `cluster_version` | Versão ativa do Kubernetes | Versão do cluster |
 | `service_listener_arns` | Mapa `contexto → ARN` dos listeners TCP do NLB interno (`work-order`, `identity`, `billing`, `inventory`) | Consumido pelo `oficina-mecanica-api-gateway` para rotear para cada microsserviço |
-| `service_listener_ports` | Mapa `contexto → porta TCP` dos listeners do NLB interno (`80`, `8081`, `8082`, `8083`) | Consumido pelo `oficina-mecanica-api-gateway` na transição da C-08 |
+| `service_listener_ports` | Mapa `contexto → porta TCP` dos listeners do NLB interno (`80`, `8081`, `8082`, `8083`) | Consumido pelo `oficina-mecanica-api-gateway` para liberar a saída do VPC Link só nas portas dos listeners |
 | `nlb_dns_name` | Nome DNS interno do NLB (`nlb-oficina-mecanica`) | Alcançado por Lambdas e recursos internos da VPC |
 | `smtp_listener_port` | Porta TCP do listener SMTP no NLB interno (`1025`) | Usada junto de `nlb_dns_name` para envio de e-mail ao MailHog |
-| `api_nlb_listener_arn` | Alias de transição para `service_listener_arns["work-order"]` | Mantido até a C-08 migrar o `oficina-mecanica-api-gateway` |
 | `zz_next_steps` | Guia rápido pós-deploy para configurar `kubeconfig` e validar acesso | Exibido ao final do `terraform output` |
 
 ---
