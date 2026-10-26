@@ -22,9 +22,9 @@ Manter **um único NLB interno** (`nlb-oficina-mecanica`) e provisionar **múlti
    - Todos os quatro Target Groups usam health check HTTP em `/api/health/ready` (`traffic-port`, intervalo de 10s, limiares 2/2, matcher `200-399`), são anexados ao Auto Scaling Group do Node Group via `aws_autoscaling_attachment` e têm sua porta NodePort liberada no Security Group do cluster apenas para o CIDR da VPC (`10.0.0.0/16`).
 2. **Listener e Target Group TCP para o SMTP do MailHog**:
    - Listener TCP `1025` → target group `tg-oficina-mecanica-smtp` (`instance` mode, `preserve_client_ip = false`, health check TCP em `traffic-port`) → NodePort `31025` (exposto pelo Service `mailhog-smtp` no namespace `platform`), com regra de entrada correspondente no Security Group do cluster a partir do CIDR da VPC.
-3. **Outputs em mapa e alias de transição (`terraform/outputs.tf`)**:
+3. **Outputs em mapa (`terraform/outputs.tf`)**:
    - Exportar `service_listener_arns`, `service_listener_ports` (`contexto → porta TCP do listener`), `nlb_dns_name` e `smtp_listener_port`.
-   - Manter `api_nlb_listener_arn` como alias de `service_listener_arns["work-order"]` durante a transição até que a alteração C-08 atualize o `oficina-mecanica-api-gateway` para ler o mapa `service_listener_arns`.
+   - O alias `api_nlb_listener_arn` (`service_listener_arns["work-order"]`) existiu só enquanto o `oficina-mecanica-api-gateway` lia um único listener; saiu quando o Gateway passou a ler os mapas.
 
 ## Alternativas consideradas
 
@@ -50,7 +50,7 @@ Descartada porque um Service do tipo `NodePort` exige alocar um NodePort para to
 
 - **Custo mínimo de balanceamento**: um único NLB interno atende os quatro microsserviços HTTP e o SMTP do MailHog.
 - **Isolamento de health check por serviço**: se um microsserviço ainda não foi implantado ou estiver indisponível, apenas o seu Target Group fica sem alvos saudáveis, sem afetar o roteamento dos demais listeners.
-- **Compatibilidade retroativa imediata**: o listener `80` e o output `api_nlb_listener_arn` preservam o funcionamento do `work-order` e do `api-gateway` atuais antes mesmo da migração do gateway na C-08.
+- **Compatibilidade retroativa imediata**: o listener `80` preservou o caminho do `work-order` e do Gateway durante a migração para os mapas.
 
 ### Negativas / Trade-offs
 
