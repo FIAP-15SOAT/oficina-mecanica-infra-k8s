@@ -14,7 +14,7 @@ Na Fase 4, o sistema é decomposto em quatro microsserviços independentes (`wor
 
 Substituir o namespace único por **isolamento por namespace gerado a partir do mapa `local.services`** (`terraform/locals.tf` e `terraform/k8s_namespace.tf`), além de um **namespace dedicado `platform`** para os componentes compartilhados do cluster:
 
-1. **Namespaces de serviço (`work-order`, `identity`, `billing`, `inventory`)**: criados via `for_each` a partir das chaves de `local.services`, todos com as labels `app.kubernetes.io/part-of = oficina-mecanica` e `managed-by = terraform`. O namespace legado `oficina` é mantido temporariamente em `local.namespaces` apenas durante a transição até a migração do `work-order` (C-12).
+1. **Namespaces de serviço (`work-order`, `identity`, `billing`, `inventory`)**: criados via `for_each` a partir das chaves de `local.services`, todos com as labels `app.kubernetes.io/part-of = oficina-mecanica` e `managed-by = terraform`.
 2. **Namespace `platform` e manifests versionados (`k8s/platform/`)**: o Datadog Agent (`DaemonSet`, `ServiceAccount`, `ClusterRole`, `ClusterRoleBinding` e `Service` `datadog-agent` na porta OTLP HTTP `4318`, com imagem fixada em `gcr.io/datadoghq/agent:7.83.1`) e o MailHog (`Deployment` com imagem fixada em `mailhog/mailhog:v1.0.1`, `Service` ClusterIP `mailhog` nas portas `1025`/`8025` e `Service` NodePort `mailhog-smtp` no NodePort `31025`) passam a pertencer a este repositório e rodar no namespace `platform`.
 3. **Aplicação pelo CD da plataforma (`platform-apply`)**: um job dedicado no `.github/workflows/cd.yml`, executado após o `terraform apply`, valida o secret `DD_API_KEY`, cria/atualiza o Secret `datadog-secret` no namespace `platform` via stdin (`kubectl create secret generic ... --dry-run=client -o yaml | kubectl apply -f -`) sem gravar a chave em arquivo, artifact ou state do Terraform, aplica `k8s/platform/` e aguarda o rollout do DaemonSet e do Deployment.
 
@@ -47,7 +47,6 @@ Descartada porque ambos são componentes de plataforma compartilhados pelos quat
 ### Negativas / Trade-offs
 
 - **Dois passos no pipeline de CD do `infra-k8s`**: o workflow de CD executa primeiro o job `terraform-k8s-base` e em seguida o job `platform-apply` com `kubectl`.
-- **Coexistência temporária do namespace `oficina`**: mantido até que a alteração C-12 conclua a migração dos manifests do `work-order` para o namespace `work-order`.
 
 ### Riscos mitigados
 
