@@ -25,7 +25,7 @@ locals {
     }
   }
 
-  namespaces = toset(concat(keys(local.services), ["platform", "oficina"]))
+  namespaces = toset(concat(keys(local.services), ["platform"]))
 
   smtp_node_port     = 31025
   smtp_listener_port = 1025

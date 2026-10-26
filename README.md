@@ -29,7 +29,7 @@ Um mapa central `local.services` em `terraform/locals.tf` declara os quatro boun
 
 | Contexto | Namespace | Repositório ECR | Target Group | NodePort | Listener NLB |
 | --- | --- | --- | --- | --- | --- |
-| `work-order` | `work-order` (e legado `oficina`) | `ecr-oficina-mecanica-work-order` | `tg-oficina-mecanica-work-order` | `30080` | `80/TCP` |
+| `work-order` | `work-order` | `ecr-oficina-mecanica-work-order` | `tg-oficina-mecanica-work-order` | `30080` | `80/TCP` |
 | `identity` | `identity` | `ecr-oficina-mecanica-identity` | `tg-oficina-mecanica-identity` | `30081` | `8081/TCP` |
 | `billing` | `billing` | `ecr-oficina-mecanica-billing` | `tg-oficina-mecanica-billing` | `30082` | `8082/TCP` |
 | `inventory` | `inventory` | `ecr-oficina-mecanica-inventory` | `tg-oficina-mecanica-inventory` | `30083` | `8083/TCP` |
@@ -47,7 +47,7 @@ Um mapa central `local.services` em `terraform/locals.tf` declara os quatro boun
    - Política de ciclo de vida individual por repositório mantendo as últimas 20 imagens de cada microsserviço (ver [ADR 0004](docs/adr/0004-ecr-scan-on-push-tags-mutaveis.md)).
 
 3. **Namespaces por Serviço e Plataforma (`k8s_namespace.tf`)**:
-   - Criação via `for_each` dos namespaces `work-order`, `identity`, `billing`, `inventory` e `platform` (além do namespace legado `oficina` durante a transição até a C-12), todos rotulados com `app.kubernetes.io/part-of = oficina-mecanica` e `managed-by = terraform` (ver [ADR 0007](docs/adr/0007-isolamento-por-namespace-e-ecr-por-bounded-context.md)).
+   - Criação via `for_each` dos namespaces `work-order`, `identity`, `billing`, `inventory` e `platform`, todos rotulados com `app.kubernetes.io/part-of = oficina-mecanica` e `managed-by = terraform` (ver [ADR 0007](docs/adr/0007-isolamento-por-namespace-e-ecr-por-bounded-context.md)).
 
 4. **Metrics Server via Helm (`k8s_metrics_server.tf`)**:
    - Implantação do Helm chart oficial de `metrics-server` em `kube-system`, fornecendo métricas de CPU e memória aos HPAs dos microsserviços.
